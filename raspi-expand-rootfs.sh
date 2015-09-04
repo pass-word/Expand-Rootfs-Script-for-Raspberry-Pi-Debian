@@ -39,16 +39,16 @@ cat <<EOF > /etc/init.d/resize2fs_once &&
 
 . /lib/lsb/init-functions
 
-case "$1" in
+case "\$1" in
   start)
     log_daemon_msg "Starting resize2fs_once" &&
     resize2fs /dev/mmcblk0p2 &&
     rm /etc/init.d/resize2fs_once &&
     update-rc.d resize2fs_once remove &&
-    log_end_msg $?
+    log_end_msg \$?
     ;;
   *)
-    echo "Usage: $0 start" >&2
+    echo "Usage: \$0 start" >&2
     exit 3
     ;;
 esac
