@@ -1,20 +1,15 @@
-#!/bin/sh
-#
-# Resize the root filesystem of a newly flashed Raspbian image.
-# Directly equivalent to the expand_rootfs section of raspi-config.
-# No claims of originality are made.
-# Mike Ray.  Feb 2013.  No warranty is implied.  Use at your own risk.
-#
-# Run as root.  Expands the root file system.  After running this,
-# reboot and give the resizefs-once script a few minutes to finish expanding the file system.
-# Check the file system with 'df -h' once it has run and you should see a size
-# close to the known size of your card.
-#
- 
-  # Get the starting offset of the root partition
-PART_START=$(parted /dev/mmcblk0 -ms unit s p | grep "^2" | cut -f 2 -d:)
+#!/bin/bash
+
+# check if this script is running under root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+# Get the starting offset of the root partition
+PART_START=$(parted /dev/mmcblk0 -ms unit s p | grep "^2" | cut -f 2 -d: | cut -f 1 -ds)
 [ "$PART_START" ] || return 1
-# Return value will likely be error for fdisk as it fails to reload the 
+# Return value will likely be error for fdisk as it fails to reload the
 # partition table because the root fs is mounted
 fdisk /dev/mmcblk0 <<EOF
 p
@@ -24,11 +19,11 @@ n
 p
 2
 $PART_START
- 
+
 p
 w
 EOF
- 
+
 # now set up an init.d script
 cat <<EOF > /etc/init.d/resize2fs_once &&
 #!/bin/sh
@@ -41,9 +36,9 @@ cat <<EOF > /etc/init.d/resize2fs_once &&
 # Short-Description: Resize the root filesystem to fill partition
 # Description:
 ### END INIT INFO
- 
+
 . /lib/lsb/init-functions
- 
+
 case "$1" in
   start)
     log_daemon_msg "Starting resize2fs_once" &&
@@ -60,4 +55,4 @@ esac
 EOF
 chmod +x /etc/init.d/resize2fs_once &&
 update-rc.d resize2fs_once defaults &&
-  echo "Root partition has been resized. The filesystem will be enlarged upon the next reboot"
+echo "Root partition has been resized. The filesystem will be enlarged upon the next reboot"
